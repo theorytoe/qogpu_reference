@@ -1,0 +1,13 @@
+name = "qogpu_reference"
+description = "qogpu reference renderer"
+version = "0.1.0-dev"
+
+authors = ["theorytoe"]
+maintainers = ["theorytoe <theory@theoryware.net>"]
+maintainers-logins = ["theorytoe"]
+licenses = "ISC"
+website = ""
+tags = []
+
+[[depends-on]]
+image_io = "^20240725.0.0"
