@@ -47,6 +47,14 @@ package Render is
        X, Y : Natural;
        Col : Color);
 
+   procedure Swap (A, B : in out Integer);
+
+   procedure Line
+      (Frame : in out Framebuffer;
+       AX, AY : Integer;
+       BX, BY : Integer;
+       Col : Color);
+
    --  TODO: Render procedure
    --  taken in verticies and draws a triangle
 

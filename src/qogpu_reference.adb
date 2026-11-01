@@ -21,6 +21,11 @@ begin
    Render.Put_Pixel (Frame, Bx, By, Render.White);
    Render.Put_Pixel (Frame, Cx, Cy, Render.White);
 
+   Render.Line (Frame, Ax, Ay, Bx, By, Render.Blue);
+   Render.Line (Frame, Cx, Cy, Bx, By, Render.Green);
+   Render.Line (Frame, Ax, Ay, Ax, Ay, Render.Yellow);
+   Render.Line (Frame, Ax, Ay, Cx, Cy, Render.Red);
+
    --  image_io has no TGA writer, so the framebuffer goes out as PNG.
    Image_IO.Operations.Write_PNG ("framebuffer.png", Frame.Data);
 end Qogpu_Reference;
