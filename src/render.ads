@@ -39,13 +39,14 @@ package Render is
 
    procedure Put_Pixel_RGB
       (Frame : in out Framebuffer;
-       X, Y : Natural;
+       X, Y : Integer;
        R, G, B : Image_IO.RGB_Value);
 
    procedure Put_Pixel
       (Frame : in out Framebuffer;
-       X, Y : Natural;
-       Col : Color);
+       X, Y : Integer;
+       Col  : Color);
+
 
    procedure Swap (A, B : in out Integer);
 
@@ -54,6 +55,13 @@ package Render is
        AX, AY : Integer;
        BX, BY : Integer;
        Col : Color);
+
+   procedure Tri
+      (Frame  : in out Framebuffer;
+       X1, Y1 : Integer;
+       X2, Y2 : Integer;
+       X3, Y3 : Integer;
+       Col    : Color);
 
    --  TODO: Render procedure
    --  taken in verticies and draws a triangle

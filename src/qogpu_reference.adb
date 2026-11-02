@@ -8,23 +8,25 @@ procedure Qogpu_Reference is
    Frame : Render.Framebuffer (Max_X => Width - 1, Max_Y => Height - 1);
 
    --  Triangle vertices from the reference program.
-   Ax : constant Natural := 7;
-   Ay : constant Natural := 3;
-   Bx : constant Natural := 12;
-   By : constant Natural := 37;
-   Cx : constant Natural := 62;
-   Cy : constant Natural := 53;
+   Ax : constant Natural := 14;
+   Ay : constant Natural :=  9;
+   Bx : constant Natural := 53;
+   By : constant Natural := 28;
+   Cx : constant Natural := 29;
+   Cy : constant Natural := 55;
 begin
    Render.Clear (Frame);
 
-   Render.Put_Pixel (Frame, Ax, Ay, Render.White);
-   Render.Put_Pixel (Frame, Bx, By, Render.White);
-   Render.Put_Pixel (Frame, Cx, Cy, Render.White);
+   --  Render.Put_Pixel (Frame, 0, 0, Render.White);
+   --  Render.Put_Pixel (Frame, 32, 32, Render.Green);
 
-   Render.Line (Frame, Ax, Ay, Bx, By, Render.Blue);
-   Render.Line (Frame, Cx, Cy, Bx, By, Render.Green);
-   Render.Line (Frame, Ax, Ay, Ax, Ay, Render.Yellow);
-   Render.Line (Frame, Ax, Ay, Cx, Cy, Render.Red);
+   --  Render.Line (Frame, Ax, Ay, Bx, By, Render.Blue);
+   --  Render.Line (Frame, Cx, Cy, Bx, By, Render.Green);
+   --  Render.Line (Frame, Ax, Ay, Ax, Ay, Render.Yellow);
+   --  Render.Line (Frame, Ax, Ay, Cx, Cy, Render.Red);
+   --  Render.Tri (Frame, Ax, Ay, Bx, By, Cx, Cy, Render.Red);
+
+   Render.Tri (Frame, Ax, Ay, Bx, By, Cx, Cy, Render.Green);
 
    --  image_io has no TGA writer, so the framebuffer goes out as PNG.
    Image_IO.Operations.Write_PNG ("framebuffer.png", Frame.Data);
