@@ -34,6 +34,21 @@ package body Render is
       B := buf;
    end Swap;
 
+   function Tri_Area
+       (Ax, Ay : Integer;
+        Bx, By : Integer;
+        Cx, Cy : Integer)
+       return Fixed_16_16
+   is
+      Area : constant Fixed_16_16 :=
+         Fixed_16_16 (0.5)
+         * ((By - Ay) * (Bx + Ax)
+         +  (Cy - By) * (Cx + Bx)
+         +  (Ay - Cy) * (Ax + Cx));
+   begin
+      return Area;
+   end Tri_Area;
+
    procedure Line
       (Frame : in out Framebuffer;
        AX, AY : Integer;
@@ -76,77 +91,36 @@ package body Render is
 
    procedure Tri
       (Frame  : in out Framebuffer;
-       X1, Y1 : Integer;
-       X2, Y2 : Integer;
-       X3, Y3 : Integer;
+       Ax, Ay : Integer;
+       Bx, By : Integer;
+       Cx, Cy : Integer;
        Col    : Color)
    is
-      Ay : Integer := Y1;
-      By : Integer := Y2;
-      Cy : Integer := Y3;
+      --  Bounding boxes
+      BBMinX : constant Integer := Integer'Min (Integer'Min (Ax, Bx), Cx);
+      BBMinY : constant Integer := Integer'Min (Integer'Min (Ay, By), Cy);
+      BBMaxX : constant Integer := Integer'Max (Integer'Max (Ax, Bx), Cx);
+      BBMaxY : constant Integer := Integer'Max (Integer'Max (Ay, By), Cy);
 
-      Ax : Integer := X1;
-      Bx : Integer := X2;
-      Cx : Integer := X3;
-
-      Total_Height : Integer;
+      Total_Area : constant Fixed_16_16 := Tri_Area (Ax, Ay, Bx, By, Cx, Cy);
    begin
-      --  Bubblesort (does complexity even matter for 3 items?)
-      if Ay > By then
-         Swap (Ay, By);
-         Swap (Ax, Bx);
+      if Total_Area < 1.0 then
+         return;
       end if;
-
-      if Ay > Cy then
-         Swap (Ay, Cy);
-         Swap (Ax, Cx);
-      end if;
-
-      if By > Cy then
-         Swap (By, Cy);
-         Swap (Bx, Cx);
-      end if;
-
-      --  Only valid once the vertices are sorted.
-      Total_Height := Cy - Ay;
-
-      if Ay /= By then
-         declare
-            Segment_Height : constant Integer := By - Ay;
-         begin
-            for Y in Ay .. By loop
-               declare
-                  X1 : constant Integer := Ax + ((Cx - Ax) * (Y - Ay)) / Total_Height;
-                  X2 : constant Integer := Ax + ((Bx - Ax) * (Y - Ay)) / Segment_Height;
-               begin
-                  for X in Integer'Min (X1, X2) .. (Integer'Max (X1, X2) - 1) loop
-                     Put_Pixel (Frame, X, Y, Col);
-                  end loop;
-               end;
-            end loop;
-         end;
-      end if;
-
-      if By /= Cy then
-         declare
-            Segment_Height : constant Integer := Cy - By;
-         begin
-            for Y in By .. Cy loop
-               declare
-                  X1 : constant Integer := Ax + ((Cx - Ax) * (Y - Ay)) / Total_Height;
-                  X2 : constant Integer := Bx + ((Cx - Bx) * (Y - By)) / Segment_Height;
-               begin
-                  for X in Integer'Min (X1, X2) .. (Integer'Max (X1, X2) - 1) loop
-                     Put_Pixel (Frame, X, Y, Col);
-                  end loop;
-               end;
-            end loop;
-         end;
-      end if;
-
-      --  Line (Frame, X1, Y1, X2, Y2, Render.Green);
-      --  Line (Frame, X2, Y2, X3, Y3, Render.Green);
-      --  Line (Frame, X3, Y3, X1, Y1, Render.Red);
+      --  TODO: Parallelize
+      for X in BBMinX .. BBMaxX loop
+         for Y in BBMinY .. BBMaxY loop
+            declare
+               Alpha : constant Fixed_16_16 := Tri_Area (X, Y, Bx, By, Cx, Cy);
+               Beta  : constant Fixed_16_16 := Tri_Area (X, Y, Cx, Cy, Ax, Ay);
+               Gamma : constant Fixed_16_16 := Tri_Area (X, Y, Ax, Ay, Bx, By);
+            begin
+               if not ((Alpha < 0.0) or (Beta < 0.0) or (Gamma < 0.0)) then
+                  Put_Pixel (Frame, X, Y, Render.Blue);
+               end if;
+            end;
+         end loop;
+      end loop;
    end Tri;
 
 end Render;

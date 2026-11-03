@@ -50,6 +50,12 @@ package Render is
 
    procedure Swap (A, B : in out Integer);
 
+   function Tri_Area
+       (Ax, Ay : Integer;
+        Bx, By : Integer;
+        Cx, Cy : Integer)
+        return Fixed_16_16;
+
    procedure Line
       (Frame : in out Framebuffer;
        AX, AY : Integer;
@@ -58,9 +64,9 @@ package Render is
 
    procedure Tri
       (Frame  : in out Framebuffer;
-       X1, Y1 : Integer;
-       X2, Y2 : Integer;
-       X3, Y3 : Integer;
+       Ax, Ay : Integer;
+       Bx, By : Integer;
+       Cx, Cy : Integer;
        Col    : Color);
 
    --  TODO: Render procedure
