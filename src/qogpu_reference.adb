@@ -8,12 +8,15 @@ procedure Qogpu_Reference is
    Frame : Render.Framebuffer (Max_X => Width - 1, Max_Y => Height - 1);
 
    --  Triangle vertices from the reference program.
-   Ax : constant Natural := 14;
-   Ay : constant Natural :=  9;
-   Bx : constant Natural := 53;
-   By : constant Natural := 28;
-   Cx : constant Natural := 29;
-   Cy : constant Natural := 55;
+   Ax : constant Natural :=  14;
+   Ay : constant Natural :=   9;
+   Az : constant Natural :=  13;
+   Bx : constant Natural :=  53;
+   By : constant Natural :=  28;
+   Bz : constant Natural := 152;
+   Cx : constant Natural :=  29;
+   Cy : constant Natural :=  55;
+   Cz : constant Natural := 255;
 begin
    Render.Clear (Frame);
 
@@ -26,7 +29,7 @@ begin
    --  Render.Line (Frame, Ax, Ay, Cx, Cy, Render.Red);
    --  Render.Tri (Frame, Ax, Ay, Bx, By, Cx, Cy, Render.Red);
 
-   Render.Tri (Frame, Ax, Ay, Bx, By, Cx, Cy, Render.Green);
+   Render.Tri (Frame, Ax, Ay, Az, Bx, By, Bz, Cx, Cy, Cz, Render.Green);
 
    --  image_io has no TGA writer, so the framebuffer goes out as PNG.
    Image_IO.Operations.Write_PNG ("framebuffer.png", Frame.Data);

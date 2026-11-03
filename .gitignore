@@ -8,4 +8,4 @@
 *.ali
 *.o
 *.so
-framebuffer.png
+*.png

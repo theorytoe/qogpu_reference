@@ -91,11 +91,12 @@ package body Render is
 
    procedure Tri
       (Frame  : in out Framebuffer;
-       Ax, Ay : Integer;
-       Bx, By : Integer;
-       Cx, Cy : Integer;
-       Col    : Color)
+       Ax, Ay, Az : Integer;
+       Bx, By, Bz : Integer;
+       Cx, Cy, Cz : Integer;
+       Col        : Color)
    is
+      use Image_IO;
       --  Bounding boxes
       BBMinX : constant Integer := Integer'Min (Integer'Min (Ax, Bx), Cx);
       BBMinY : constant Integer := Integer'Min (Integer'Min (Ay, By), Cy);
@@ -111,12 +112,25 @@ package body Render is
       for X in BBMinX .. BBMaxX loop
          for Y in BBMinY .. BBMaxY loop
             declare
-               Alpha : constant Fixed_16_16 := Tri_Area (X, Y, Bx, By, Cx, Cy);
-               Beta  : constant Fixed_16_16 := Tri_Area (X, Y, Cx, Cy, Ax, Ay);
-               Gamma : constant Fixed_16_16 := Tri_Area (X, Y, Ax, Ay, Bx, By);
+               --  Barycentric Coordinates
+               Alpha : constant Fixed_16_16 :=
+                  Tri_Area (X, Y, Bx, By, Cx, Cy) / Total_Area;
+               Beta  : constant Fixed_16_16 :=
+                  Tri_Area (X, Y, Cx, Cy, Ax, Ay) / Total_Area;
+               Gamma : constant Fixed_16_16 :=
+                  Tri_Area (X, Y, Ax, Ay, Bx, By) / Total_Area;
+
             begin
                if not ((Alpha < 0.0) or (Beta < 0.0) or (Gamma < 0.0)) then
-                  Put_Pixel (Frame, X, Y, Render.Blue);
+                  declare
+                     --  Weights based on coords
+                     Weight : constant Color :=
+                        (Red   => RGB_Value (Fixed_16_16'(Alpha) * 255.0),
+                         Green => RGB_Value (Fixed_16_16'(Beta ) * 255.0),
+                         Blue  => RGB_Value (Fixed_16_16'(Gamma) * 255.0));
+                  begin
+                     Put_Pixel (Frame, X, Y, Weight);
+                  end;
                end if;
             end;
          end loop;

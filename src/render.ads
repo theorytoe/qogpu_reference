@@ -64,10 +64,10 @@ package Render is
 
    procedure Tri
       (Frame  : in out Framebuffer;
-       Ax, Ay : Integer;
-       Bx, By : Integer;
-       Cx, Cy : Integer;
-       Col    : Color);
+       Ax, Ay, Az : Integer;
+       Bx, By, Bz : Integer;
+       Cx, Cy, Cz : Integer;
+       Col        : Color);
 
    --  TODO: Render procedure
    --  taken in verticies and draws a triangle
