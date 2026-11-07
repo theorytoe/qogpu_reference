@@ -105,7 +105,7 @@ package body Render is
 
       Total_Area : constant Fixed_16_16 := Tri_Area (Ax, Ay, Bx, By, Cx, Cy);
    begin
-      if Total_Area < 1.0 then
+      if abs (Total_Area) < 1.0 then
          return;
       end if;
       --  TODO: Parallelize
