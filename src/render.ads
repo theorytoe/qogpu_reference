@@ -1,16 +1,8 @@
 with Interfaces;
 with Image_IO;
+with Types;
 package Render is
-
-   --  Declare the same fixed-point type the FPGA uses internally.
-   --  16 integer bits, 16 fractional bits: matches the synthesis target.
-   type Fixed_16_16 is
-      delta 2.0 ** (-16)
-      range -(2.0 ** 15) .. (2.0 ** 15) - 2.0 ** (-16);
-
-   --  perhaps
-   subtype Byte is Interfaces.Unsigned_8;
-   subtype Color is Image_IO.Color_Info;
+   use Types;
 
    White  : constant Color := (Red => 255, Green => 255, Blue => 255);
    Green  : constant Color := (Red =>   0, Green => 255, Blue =>   0);
@@ -18,6 +10,7 @@ package Render is
    Blue   : constant Color := (Red =>  64, Green => 128, Blue => 255);
    Yellow : constant Color := (Red => 255, Green => 200, Blue =>   0);
    Black  : constant Color := (Red =>   0, Green =>   0, Blue =>   0);
+
 
    --  A fixed-size, 0-based framebuffer. The bounds are discriminants so the
    --  array component stays constrained (Image_Data is unconstrained).

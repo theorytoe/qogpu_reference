@@ -122,15 +122,7 @@ package body Render is
 
             begin
                if not ((Alpha < 0.0) or (Beta < 0.0) or (Gamma < 0.0)) then
-                  declare
-                     --  Weights based on coords
-                     Weight : constant Color :=
-                        (Red   => RGB_Value (Fixed_16_16'(Alpha) * 255.0),
-                         Green => RGB_Value (Fixed_16_16'(Beta ) * 255.0),
-                         Blue  => RGB_Value (Fixed_16_16'(Gamma) * 255.0));
-                  begin
-                     Put_Pixel (Frame, X, Y, Weight);
-                  end;
+                  Put_Pixel (Frame, X, Y, Col);
                end if;
             end;
          end loop;

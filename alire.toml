@@ -11,3 +11,9 @@ tags = []
 
 [[depends-on]]
 image_io = "^20240725.0.0"
+
+[[depends-on]]
+objloader = "~0.1.0-dev"
+
+[[pins]]
+objloader = { url='https://github.com/theorytoe/objloader' }
