@@ -1,6 +1,7 @@
 with Image_IO.Operations;
 with Render;
 with Types;
+with Geometry;
 with Objloader.Files;
 with Ada.Numerics.Discrete_Random;
 
@@ -18,34 +19,21 @@ procedure Qogpu_Reference is
    Palette : constant array (1 .. 3) of Color :=
       (Render.Green, Render.Red, Render.Blue);
 
-   --  Model / View transform matricies pre-compute
+   --  Model Transform matrix
+   --  -> Rot(x, 30)
+   --  -> Rot(y, 60)
+   --  -> Translate(z, -3)
    M : constant Mat4 :=
-      ((1.0, 0.0, 0.0, 0.0),
-       (0.0, 1.0, 0.0, 0.0),
-       (0.0, 0.0, 1.0, 0.0),
-       (0.0, 0.0, 0.0, 1.0));
+      ((   0.5, 0.433,  0.75,  0.0),
+       (   0.0, 0.866,  -0.5,  0.0),
+       (-0.866,  0.25, 0.433, -3.0),
+       (   0.0,   0.0,   0.0,  1.0));
 
-   V : constant Mat4 :=
-      (( 0.4472,  0.0000, -0.8944,  0.0000),
-       (-0.3651,  0.9129, -0.1826,  0.0000),
-       ( 0.8165,  0.4082,  0.4082, -2.4490),
-       ( 0.0000,  0.0000,  0.0000,  1.0000));
+   V : constant Mat4 := Mat_Id4;
 
-   --  Local->Camera coord transform matrix
-   MV : constant Mat4 := V * M;
-
-   --  some camera values
-   Near  : constant Fixed_16_16 := 1.0;
-   Inv_T : constant Fixed_16_16 := 1.0;
-   Inv_R : constant Fixed_16_16 := 0.75;
-
-   type Pixel_Vert is record
-      Px, Py : Integer;
-      Inv_D  : Fixed_16_16;
-   end record;
-
-   Projected : array ( 1..3 ) of Pixel_Vert;
-   Visible   : Boolean;
+   -- Geometry Transform
+   TriBuf : constant Geometry.Vert_Buffer :=
+      Geometry.Transform_Mesh (Emesh, M, V, Width, Height);
 
    function RandColor return Color is
       subtype Col is Integer range 0 .. 255;
@@ -62,83 +50,25 @@ procedure Qogpu_Reference is
    end RandColor;
 begin
    Render.Clear (Frame);
+
+   --  Geometry Transforms (see declarative portion)
    --  TODO: Depth Buffer
 
-   for Tri of EMesh loop
+   --  Rasterization Phase
+   for T in 1 .. TriBuf'Length / 3 loop
       declare
-         Verts : constant array ( 1..3 ) of Objloader.Vertex :=
-            (Tri.A.Position, Tri.B.Position, Tri.C.Position);
+         A : constant Geometry.Vert := TriBuf (3 * (T - 1) + 1);
+         B : constant Geometry.Vert := TriBuf (3 * (T - 1) + 2);
+         C : constant Geometry.Vert := TriBuf (3 * (T - 1) + 3);
       begin
-         Visible := true;
-
-         for C in 1..3 loop
-            declare
-               P : constant Vec3 :=
-                  (X => Fixed_16_16 (Verts (C).X),
-                   Y => Fixed_16_16 (Verts (C).Y),
-                   Z => Fixed_16_16 (Verts (C).Z));
-               PC : constant Vec3 := Transform_Point (MV, P);
-               D  : constant Fixed_16_16 := -PC.Z; --  Camera depth
-            begin
-               if D <= Near then
-                  Visible := false;
-               else
-                  declare
-                     Inv_D : constant Fixed_16_16 := 1.0 / D;
-                     Sx    : constant Fixed_16_16 := PC.X * Inv_D;
-                     Sy    : constant Fixed_16_16 := PC.Y * Inv_D;
-                     Ndx   : constant Fixed_16_16 := Sx * Inv_R;
-                     Ndy   : constant Fixed_16_16 := Sy * Inv_T;
-                     Px    : constant Integer := Integer ((Ndx + 1.0) * 320);
-                     Py    : constant Integer := Integer ((1.0 - Ndy) * 240);
-                  begin
-                     Projected (C) :=
-                        (Px => Integer'Min (Integer'Max (Px, 0), Width - 1),
-                         Py => Integer'Min (Integer'Max (Py, 0), Height - 1),
-                         Inv_D => Inv_D);
-                  end;
-               end if;
-            end;
-         end loop;
-
-         --  Primitive culling
-         declare
-            Area : constant Integer :=
-               Render.Tri_Area (Projected (1).Px, Projected (1).Py,
-                                Projected (2).Px, Projected (2).Py,
-                                Projected (3).Px, Projected (3).Py);
-         begin
-            if Area >= 0 then         -- back-facing (flip the sign if the
-               Visible := False;      -- whole cube vanishes!)
-            end if;
-         end;
-
-         if Visible then
-            Render.Tri
-               (Frame,
-                Projected (1).Px, Projected (1).Py, 0,
-                Projected (2).Px, Projected (2).Py, 0,
-                Projected (3).Px, Projected (3).Py, 0,
-                RandColor);
---            Render.Line
---               (Frame,
---                Projected (1).Px, Projected (1).Py,
---                Projected (2).Px, Projected (2).Py,
---                RandColor);
---            Render.Line
---               (Frame,
---                Projected (2).Px, Projected (2).Py,
---                Projected (3).Px, Projected (3).Py,
---                RandColor);
---            Render.Line
---               (Frame,
---                Projected (3).Px, Projected (3).Py,
---                Projected (1).Px, Projected (1).Py,
---                RandColor);
-         end if;
+         Render.Tri
+            (Frame,
+             A.X, A.Y, 0,
+             B.X, B.Y, 0,
+             C.X, C.Y, 0,
+             RandColor);
       end;
    end loop;
 
-   --  image_io has no TGA writer, so the framebuffer goes out as PNG.
    Image_IO.Operations.Write_PNG ("framebuffer.png", Frame.Data);
 end Qogpu_Reference;

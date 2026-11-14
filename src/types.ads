@@ -2,8 +2,6 @@ with Interfaces;
 with Image_IO;
 
 package Types is
-   pragma Elaborate_Body;
-
    --  Declare the same fixed-point type the FPGA uses internally.
    --  16 integer bits, 16 fractional bits: matches the synthesis target.
    type Fixed_16_16 is
