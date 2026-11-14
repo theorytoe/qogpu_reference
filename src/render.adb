@@ -38,13 +38,12 @@ package body Render is
        (Ax, Ay : Integer;
         Bx, By : Integer;
         Cx, Cy : Integer)
-       return Fixed_16_16
+       return Integer
    is
-      Area : constant Fixed_16_16 :=
-         Fixed_16_16 (0.5)
-         * ((By - Ay) * (Bx + Ax)
-         +  (Cy - By) * (Cx + Bx)
-         +  (Ay - Cy) * (Ax + Cx));
+      Area : constant Integer :=
+         ((By - Ay) * (Bx + Ax) +
+          (Cy - By) * (Cx + Bx) +
+          (Ay - Cy) * (Ax + Cx));
    begin
       return Area;
    end Tri_Area;
@@ -103,9 +102,10 @@ package body Render is
       BBMaxX : constant Integer := Integer'Max (Integer'Max (Ax, Bx), Cx);
       BBMaxY : constant Integer := Integer'Max (Integer'Max (Ay, By), Cy);
 
-      Total_Area : constant Fixed_16_16 := Tri_Area (Ax, Ay, Bx, By, Cx, Cy);
+      Total_Area : constant Integer := Tri_Area (Ax, Ay, Bx, By, Cx, Cy);
+      TS         : constant Integer := (if Total_Area < 0 then -1 else 1);
    begin
-      if abs (Total_Area) < 1.0 then
+      if abs (Total_Area) < 2 then
          return;
       end if;
       --  TODO: Parallelize
@@ -113,15 +113,15 @@ package body Render is
          for Y in BBMinY .. BBMaxY loop
             declare
                --  Barycentric Coordinates
-               Alpha : constant Fixed_16_16 :=
-                  Tri_Area (X, Y, Bx, By, Cx, Cy) / Total_Area;
-               Beta  : constant Fixed_16_16 :=
-                  Tri_Area (X, Y, Cx, Cy, Ax, Ay) / Total_Area;
-               Gamma : constant Fixed_16_16 :=
-                  Tri_Area (X, Y, Ax, Ay, Bx, By) / Total_Area;
+               Alpha : constant Integer :=
+                  TS * Tri_Area (X, Y, Bx, By, Cx, Cy);
+               Beta  : constant Integer :=
+                  TS * Tri_Area (X, Y, Cx, Cy, Ax, Ay);
+               Gamma : constant Integer :=
+                  TS * Tri_Area (X, Y, Ax, Ay, Bx, By);
 
             begin
-               if not ((Alpha < 0.0) or (Beta < 0.0) or (Gamma < 0.0)) then
+               if not ((Alpha < 0) or (Beta < 0) or (Gamma < 0)) then
                   Put_Pixel (Frame, X, Y, Col);
                end if;
             end;

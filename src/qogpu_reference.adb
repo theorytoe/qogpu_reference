@@ -2,6 +2,7 @@ with Image_IO.Operations;
 with Render;
 with Types;
 with Objloader.Files;
+with Ada.Numerics.Discrete_Random;
 
 procedure Qogpu_Reference is
    use Types;
@@ -10,17 +11,6 @@ procedure Qogpu_Reference is
    Height : constant Positive := 480;
 
    Frame : Render.Framebuffer (Max_X => Width - 1, Max_Y => Height - 1);
-
-   --  Triangle vertices from the reference program.
-   Ax : constant Natural :=  14;
-   Ay : constant Natural :=   9;
-   Az : constant Natural :=  13;
-   Bx : constant Natural :=  53;
-   By : constant Natural :=  28;
-   Bz : constant Natural := 152;
-   Cx : constant Natural :=  29;
-   Cy : constant Natural :=  55;
-   Cz : constant Natural := 255;
 
    Mesh :  constant Objloader.Mesh := Objloader.Files.Load ("cube.obj");
    EMesh : constant Objloader.Expanded_Mesh := Objloader.Expand (Mesh);
@@ -36,10 +26,10 @@ procedure Qogpu_Reference is
        (0.0, 0.0, 0.0, 1.0));
 
    V : constant Mat4 :=
-      ((0.4472, 0.0000, -0.8944, 0.0000),
-        (0.0000, 1.0000, 0.0000, 0.0000),
-        (0.8944, 0.0000, 0.4472, -2.2361),
-        (0.0000, 0.0000, 0.0000, 1.0000));
+      (( 0.4472,  0.0000, -0.8944,  0.0000),
+       (-0.3651,  0.9129, -0.1826,  0.0000),
+       ( 0.8165,  0.4082,  0.4082, -2.4490),
+       ( 0.0000,  0.0000,  0.0000,  1.0000));
 
    --  Local->Camera coord transform matrix
    MV : constant Mat4 := V * M;
@@ -56,14 +46,26 @@ procedure Qogpu_Reference is
 
    Projected : array ( 1..3 ) of Pixel_Vert;
    Visible   : Boolean;
+
+   function RandColor return Color is
+      subtype Col is Integer range 0 .. 255;
+      package Random_Col is new Ada.Numerics.Discrete_Random (Col);
+      Gen : Random_Col.Generator;
+      Result : Color;
+   begin
+      Random_Col.Reset (Gen);
+      Result :=
+         (Red   => Image_IO.RGB_Value (Random_Col.Random (Gen)),
+          Green => Image_IO.RGB_Value (Random_Col.Random (Gen)),
+          Blue  => Image_IO.RGB_Value (Random_Col.Random (Gen)));
+      return Result;
+   end RandColor;
 begin
    Render.Clear (Frame);
    --  TODO: Depth Buffer
 
-   for I in EMesh'Range loop
+   for Tri of EMesh loop
       declare
-         Tri : constant  Objloader.Expanded_Triangle := EMesh (I);
-         Col : constant Color := Palette ((I - 1) mod Palette'Length + 1);
          Verts : constant array ( 1..3 ) of Objloader.Vertex :=
             (Tri.A.Position, Tri.B.Position, Tri.C.Position);
       begin
@@ -101,12 +103,12 @@ begin
 
          --  Primitive culling
          declare
-            Area : constant Fixed_16_16 :=
+            Area : constant Integer :=
                Render.Tri_Area (Projected (1).Px, Projected (1).Py,
                                 Projected (2).Px, Projected (2).Py,
                                 Projected (3).Px, Projected (3).Py);
          begin
-            if Area >= 0.0 then       -- back-facing (flip the sign if the
+            if Area >= 0 then         -- back-facing (flip the sign if the
                Visible := False;      -- whole cube vanishes!)
             end if;
          end;
@@ -117,7 +119,22 @@ begin
                 Projected (1).Px, Projected (1).Py, 0,
                 Projected (2).Px, Projected (2).Py, 0,
                 Projected (3).Px, Projected (3).Py, 0,
-                Col);
+                RandColor);
+--            Render.Line
+--               (Frame,
+--                Projected (1).Px, Projected (1).Py,
+--                Projected (2).Px, Projected (2).Py,
+--                RandColor);
+--            Render.Line
+--               (Frame,
+--                Projected (2).Px, Projected (2).Py,
+--                Projected (3).Px, Projected (3).Py,
+--                RandColor);
+--            Render.Line
+--               (Frame,
+--                Projected (3).Px, Projected (3).Py,
+--                Projected (1).Px, Projected (1).Py,
+--                RandColor);
          end if;
       end;
    end loop;

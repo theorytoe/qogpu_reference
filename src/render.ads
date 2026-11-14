@@ -47,7 +47,7 @@ package Render is
        (Ax, Ay : Integer;
         Bx, By : Integer;
         Cx, Cy : Integer)
-        return Fixed_16_16;
+        return Integer;
 
    procedure Line
       (Frame : in out Framebuffer;
