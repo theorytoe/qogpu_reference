@@ -20,25 +20,16 @@ procedure Qogpu_Reference is
    Palette : constant array (1 .. 3) of Color :=
       (Render.Green, Render.Red, Render.Blue);
 
-   --  Model Transform matrix
-   --  -> Rot(x, 30)
-   --  -> Rot(y, 60)
-   --  -> Translate(z, -3)
---   M : constant Mat4 :=
---      ((   0.5, 0.433,  0.75,  0.0),
---       (   0.0, 0.866,  -0.5,  0.0),
---       (-0.866,  0.25, 0.433, -3.0),
---       (   0.0,   0.0,   0.0,  1.0));
-   M : constant Mat4 :=
-      ((0.0250, 0.0000, 0.0433, -0.5000),
-       (0.0217, 0.0433, -0.0125, 0.0000),
-       (-0.0375, 0.0250, 0.0217, -2.0000),
-       (0.0000, 0.0000, 0.0000, 1.0000));
-
-   V : constant Mat4 := Mat_Id4;
+   --  NOTE: TriBuf below is a constant, so M must be initialized with the
+   --  transform here; assigning it later would leave TriBuf with identity.
+   M : Mat4 := Geometry.Cartesian_Transform
+      (Position => (   -1.0,     0.5, -3.0),
+       Rotation => (-0.5236, -1.0472,  0.0),
+       Scale    => (    0.1,     0.1,  0.1));
+   V : Mat4 := Mat_Id4;
 
    -- Geometry Transform
-   TriBuf : constant Geometry.Vert_Buffer :=
+   TriBuf : constant Vert_Buffer :=
       Geometry.Transform_Mesh (Emesh, M, V, Width, Height);
 
    subtype Col_Byte is Integer range 0 .. 255;
@@ -61,9 +52,9 @@ begin
    --  Rasterization Phase
    for T in 1 .. TriBuf'Length / 3 loop
       declare
-         A : constant Geometry.Vert := TriBuf (3 * (T - 1) + 1);
-         B : constant Geometry.Vert := TriBuf (3 * (T - 1) + 2);
-         C : constant Geometry.Vert := TriBuf (3 * (T - 1) + 3);
+         A : constant Vert := TriBuf (3 * (T - 1) + 1);
+         B : constant Vert := TriBuf (3 * (T - 1) + 2);
+         C : constant Vert := TriBuf (3 * (T - 1) + 3);
       begin
          Render.Tri
             (Frame,

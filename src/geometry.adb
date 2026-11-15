@@ -1,5 +1,58 @@
+with Numerics;
+
 package body Geometry is
    use Types;
+
+   function Cartesian_Transform
+      (Position    : Vec3;
+       Rotation    : Vec3;
+       Scale       : Vec3) return Mat4
+   is
+      use Numerics;
+
+      --  One CORDIC call per angle: Sin_Cos returns both results, so no
+      --  angle is iterated twice.
+      SX : constant Sin_Cos_Pair := Sin_Cos (Rotation.X);
+      SY : constant Sin_Cos_Pair := Sin_Cos (Rotation.Y);
+      SZ : constant Sin_Cos_Pair := Sin_Cos (Rotation.Z);
+
+      T : Mat4 := Mat_Id4;
+      S : Mat4 := Mat_Id4;
+      R : Mat4 := Mat_Id4;
+
+      Result : Mat4 := Mat_Id4;
+   begin
+
+      --  Transformation Matrix
+      T (1, 4) := Position.X;
+      T (2, 4) := Position.Y;
+      T (3, 4) := Position.Z;
+
+      -- Rotation Matrix (Rx * Ry * Rz combined form). Fixed * fixed yields
+      -- universal_fixed, so each 3-factor chain is split with an explicit
+      -- conversion; sums and 2-factor products convert implicitly here.
+      R (1,1) := SY.Cos * SZ.Cos;
+      R (1,2) := Fixed_16_16 (SX.Sin * SY.Sin) * SZ.Cos + SX.Cos * SZ.Sin;
+      R (1,3) := SX.Sin * SZ.Sin - Fixed_16_16 (SX.Cos * SY.Sin) * SZ.Cos;
+
+      R (2,1) := -SY.Cos * SZ.Sin;
+      R (2,2) := SX.Cos * SZ.Cos - Fixed_16_16 (SX.Sin * SY.Sin) * SZ.Sin;
+      R (2,3) := Fixed_16_16 (SX.Cos * SY.Sin) * SZ.Sin + SX.Sin * SZ.Cos;
+
+      R (3,1) := SY.Sin;
+      R (3,2) := -SX.Sin * SY.Cos;
+      R (3,3) := SX.Cos * SY.Cos;
+
+      -- Scale Matrix
+      S (1,1) := Scale.X;
+      S (2,2) := Scale.Y;
+      S (3,3) := Scale.Z;
+
+      --  right->left for transformation order
+      Result := T * R * S;
+      return Result;
+   end Cartesian_Transform;
+
 
    function Transform_Mesh
       (Mesh        : Objloader.Expanded_Mesh;

@@ -43,6 +43,13 @@ package Types is
       X, Y, Z : Fixed_16_16;
    end record;
 
+   type Vert is record
+      X, Y   : Integer;
+      Inv_D  : Types.Fixed_16_16;
+   end record;
+
+   type Vert_Buffer is array (Positive range <>) of Vert;
+
    function Det (M : Mat3) return Fixed_16_16;
    function Det (M : Mat4) return Fixed_16_16;
 
