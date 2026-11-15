@@ -4,7 +4,11 @@ package body Render is
       (Frame : in out Framebuffer;
        Col   : Color := Black)
    is begin
-      Frame.Data := (others => (others => Col));
+      Frame.Data  := (others => (others => Col));
+      --  Depth is NOT Col: reset to "everything far". Bigger stored value
+      --  = nearer, so 0 means the far side of the frustum.
+      Frame.Depth :=
+         (others => (others => (Red => 0, Green => 0, Blue => 0)));
    end Clear;
 
    procedure Put_Pixel_RGB
@@ -25,6 +29,16 @@ package body Render is
           Green => Col.Green,
           Blue  => Col.Blue);
    end Put_Pixel;
+
+   procedure Put_ZBuf
+      (Frame : in out Framebuffer;
+       X, Y  : Integer;
+       Depth : Image_IO.RGB_Value)
+   is begin
+      --  Store gray so depth.png comes out as a grayscale depth map.
+      Frame.Depth (Y, X) :=
+         (Red => Depth, Green => Depth, Blue => Depth);
+   end Put_ZBuf;
 
    procedure Swap (A, B : in out Integer)
    is
@@ -90,12 +104,26 @@ package body Render is
 
    procedure Tri
       (Frame  : in out Framebuffer;
-       Ax, Ay, Az : Integer;
-       Bx, By, Bz : Integer;
-       Cx, Cy, Cz : Integer;
-       Col        : Color)
+       Ax, Ay : Integer;
+       Az     : Fixed_16_16;
+       Bx, By : Integer;
+       Bz     : Fixed_16_16;
+       Cx, Cy : Integer;
+       Cz     : Fixed_16_16;
+       Col    : Color)
    is
       use Image_IO;
+
+      --  Quantize Inv_D (1 / camera depth) to 0..255. The near-plane cull
+      --  in Geometry.Transform_Mesh guarantees D > 1.0, so Inv_D < 1.0
+      --  fits; clamp anyway so a stray vertex can't overflow RGB_Value.
+      function Q (Inv_D : Fixed_16_16) return Integer is
+         Raw : constant Integer :=
+            Integer (Long_Long_Float (Inv_D) * 255.0);
+      begin
+         return Integer'Min (Integer'Max (Raw, 0), 255);
+      end Q;
+
       --  Bounding boxes
       BBMinX : constant Integer := Integer'Min (Integer'Min (Ax, Bx), Cx);
       BBMinY : constant Integer := Integer'Min (Integer'Min (Ay, By), Cy);
@@ -104,8 +132,14 @@ package body Render is
 
       Total_Area : constant Integer := Tri_Area (Ax, Ay, Bx, By, Cx, Cy);
       TS         : constant Integer := (if Total_Area < 0 then -1 else 1);
+      TA         : constant Integer := abs (Total_Area);
+
+      --  Per-vertex quantized depth. Bigger = nearer.
+      QA         : constant Integer := Q (Az);
+      QB         : constant Integer := Q (Bz);
+      QC         : constant Integer := Q (Cz);
    begin
-      if abs (Total_Area) < 2 then
+      if TA < 2 then
          return;
       end if;
       --  TODO: Parallelize
@@ -120,9 +154,25 @@ package body Render is
                Gamma : constant Integer :=
                   TS * Tri_Area (X, Y, Ax, Ay, Bx, By);
 
+               --  Perspective-correct depth: interpolate Inv_D, which is
+               --  linear in screen space (raw Z is not). Depth_N is
+               --  unnormalized: divide by TA (constant per triangle) to
+               --  get the pixel's quantized depth. Max value check:
+               --  TA * 255 fits comfortably in Integer for 640x480.
+               Depth_N : constant Integer :=
+                  Alpha * QA +
+                  Beta  * QB +
+                  Gamma * QC;
             begin
                if not ((Alpha < 0) or (Beta < 0) or (Gamma < 0)) then
-                  Put_Pixel (Frame, X, Y, Col);
+                  --  Depth test against the stored quantized value,
+                  --  rescaled by TA to defer the division: one divide per
+                  --  pixel that actually passes, none for failures.
+                  if Depth_N > Integer (Frame.Depth (Y, X).Red) * TA then
+                     Put_Pixel (Frame, X, Y, Col);
+                     Put_ZBuf  (Frame, X, Y,
+                                Image_IO.RGB_Value (Depth_N / TA));
+                  end if;
                end if;
             end;
          end loop;

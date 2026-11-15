@@ -17,7 +17,8 @@ package Render is
    --  Ada requires a discriminant-dependent array bound to be the discriminant
    --  alone, so the discriminants are the last index, not the size.
    type Framebuffer (Max_X, Max_Y : Natural) is record
-      Data : Image_IO.Image_Data (0 .. Max_Y, 0 .. Max_X);
+      Data  : Image_IO.Image_Data (0 .. Max_Y, 0 .. Max_X);
+      Depth : Image_IO.Image_Data (0 .. Max_Y, 0 .. Max_X);
    end record;
 
    function Width (Frame : Framebuffer) return Positive is (Frame.Max_X + 1);
@@ -40,6 +41,11 @@ package Render is
        X, Y : Integer;
        Col  : Color);
 
+   procedure Put_ZBuf
+      (Frame : in out Framebuffer;
+       X, Y  : Integer;
+       Depth : Image_IO.RGB_Value);
+
 
    procedure Swap (A, B : in out Integer);
 
@@ -55,12 +61,21 @@ package Render is
        BX, BY : Integer;
        Col : Color);
 
+   --  Rasterizes a triangle with a z-buffer depth test.
+   --  Az/Bz/Cz are the PERSPECTIVE DEPTH of each vertex: Inv_D = 1 / (-Z)
+   --  from Geometry.Transform_Mesh (NOT view-space Z). 1/z is linear in
+   --  screen space, so interpolating it barycentrically is perspective
+   --  correct; interpolating raw Z is not. Depth is stored quantized
+   --  0..255 in Frame.Depth (bigger = nearer; Clear resets to "all far").
    procedure Tri
       (Frame  : in out Framebuffer;
-       Ax, Ay, Az : Integer;
-       Bx, By, Bz : Integer;
-       Cx, Cy, Cz : Integer;
-       Col        : Color);
+       Ax, Ay : Integer;
+       Az     : Fixed_16_16;
+       Bx, By : Integer;
+       Bz     : Fixed_16_16;
+       Cx, Cy : Integer;
+       Cz     : Fixed_16_16;
+       Col    : Color);
 
    --  TODO: Render procedure
    --  taken in verticies and draws a triangle
