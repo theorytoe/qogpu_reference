@@ -118,8 +118,10 @@ package body Render is
       --  in Geometry.Transform_Mesh guarantees D > 1.0, so Inv_D < 1.0
       --  fits; clamp anyway so a stray vertex can't overflow RGB_Value.
       function Q (Inv_D : Fixed_16_16) return Integer is
-         Raw : constant Integer :=
-            Integer (Long_Long_Float (Inv_D) * 255.0);
+         --  Inv_D * 255 stays on the Q16.16 grid exactly (integer part <
+         --  256, 16 fraction bits), so no quantization is introduced and
+         --  no float is needed (numerical_model.md §7.2, Design Rule 1).
+         Raw : constant Integer := Integer (Inv_D * 255.0);
       begin
          return Integer'Min (Integer'Max (Raw, 0), 255);
       end Q;
